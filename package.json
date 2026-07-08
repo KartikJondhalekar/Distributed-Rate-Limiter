@@ -6,10 +6,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify:config": "tsx src/verify-config.ts"
+    "verify:config": "tsx src/verify-config.ts",
+    "verify:limiter": "tsx src/verify-limiter.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "ioredis": "^5.4.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
