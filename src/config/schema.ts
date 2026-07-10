@@ -36,8 +36,8 @@ export const configSchema = z
         DEFAULT_ALGORITHM: z.enum(ALGORITHMS).default('token-bucket'),
         DEFAULT_WINDOW_MS: positiveInt('DEFAULT_WINDOW_MS').default(60_000),
         DEFAULT_MAX_REQUESTS: positiveInt('DEFAULT_MAX_REQUESTS').default(100),
-        DEFAULT_BUCKET_CAPACITY: positiveInt('DEFAULT_BUCKET_CAPACITY').default(100),
-        DEFAULT_REFILL_RATE_PER_SEC: positiveNumber('DEFAULT_REFILL_RATE_PER_SEC').default(1.6667),
+        DEFAULT_BUCKET_CAPACITY: positiveInt('DEFAULT_BUCKET_CAPACITY').optional(),
+        DEFAULT_REFILL_RATE_PER_SEC: positiveNumber('DEFAULT_REFILL_RATE_PER_SEC').optional(),
 
         FAILURE_MODE: z.enum(FAILURE_MODES).default('fail-open'),
 
@@ -52,8 +52,12 @@ export const configSchema = z
                 message: 'METRICS_PORT must differ from API_PORT',
             });
         }
-        // A bucket smaller than the limit can never admit a full burst.
-        if (cfg.DEFAULT_BUCKET_CAPACITY < cfg.DEFAULT_MAX_REQUESTS) {
+        // Only enforceable when an explicit capacity is set; otherwise capacity
+        // is derived from maxRequests and this can't be violated.
+        if (
+            cfg.DEFAULT_BUCKET_CAPACITY !== undefined &&
+            cfg.DEFAULT_BUCKET_CAPACITY < cfg.DEFAULT_MAX_REQUESTS
+        ) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ['DEFAULT_BUCKET_CAPACITY'],

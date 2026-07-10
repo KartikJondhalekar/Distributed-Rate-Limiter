@@ -91,7 +91,11 @@ export function policyFromConfig(config: Config): LimitPolicy {
         algorithm: config.DEFAULT_ALGORITHM,
         windowMs: config.DEFAULT_WINDOW_MS,
         maxRequests: config.DEFAULT_MAX_REQUESTS,
-        bucketCapacity: config.DEFAULT_BUCKET_CAPACITY,
-        refillRatePerSec: config.DEFAULT_REFILL_RATE_PER_SEC,
+        ...(config.DEFAULT_BUCKET_CAPACITY !== undefined
+            ? { bucketCapacity: config.DEFAULT_BUCKET_CAPACITY }
+            : {}),
+        ...(config.DEFAULT_REFILL_RATE_PER_SEC !== undefined
+            ? { refillRatePerSec: config.DEFAULT_REFILL_RATE_PER_SEC }
+            : {}),
     };
 }
