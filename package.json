@@ -16,19 +16,23 @@
     "test:coverage": "jest --config jest.config.js --coverage",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
     "verify:config": "tsx src/verify-config.ts",
-    "verify:limiter": "tsx src/verify-limiter.ts"
+    "verify:limiter": "tsx src/verify-limiter.ts",
+    "load:single": "k6 run benchmarks/single-instance.js",
+    "load:multi": "k6 run benchmarks/multi-instance.js",
+    "load:burst": "k6 run benchmarks/burst.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "ioredis": "^5.4.1",
+    "prom-client": "^15.1.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@testcontainers/redis": "^10.13.2",
     "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.14",
-    "@types/node": "^20.19.43",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
     "jest": "^29.7.0",
     "testcontainers": "^10.13.2",
     "ts-jest": "^29.2.5",

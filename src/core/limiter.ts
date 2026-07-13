@@ -33,18 +33,29 @@ export class DefaultRateLimiter implements RateLimiter {
         const fullKey = this.deps.keyBuilder.build(clientKey);
         const script = this.deps.algorithm.buildScript(fullKey, policy);
 
+        const started = this.deps.clock.nowMs();
         try {
             const raw = await this.deps.store.evaluate(script);
             const decision = this.deps.algorithm.interpret(raw, policy, this.deps.clock.nowMs());
+            this.observeLatency(started);
             this.record(decision);
             return decision;
         } catch (err) {
+            this.observeLatency(started);
             if (err instanceof StoreUnavailableError) {
                 return this.degraded(policy);
             }
             // ScriptExecutionError and anything else are real bugs — let them bubble.
             throw err;
         }
+    }
+
+    private observeLatency(startedMs: number): void {
+        this.deps.metrics?.observeHistogram(
+            'rate_limiter_redis_latency_ms',
+            this.deps.clock.nowMs() - startedMs,
+            { algorithm: this.deps.algorithm.name },
+        );
     }
 
     private degraded(policy: LimitPolicy): Decision {

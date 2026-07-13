@@ -3,27 +3,24 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { Redis } from 'ioredis';
 import { loadConfig } from './config';
-import type { Logger } from './core/interfaces';
 import { buildRateLimiter } from './factory';
 import { RedisRateLimitStore } from './store/redis-store';
 import { rateLimit } from './middleware/express';
 import { createRateLimitRouter } from './api/rate-limit-router';
-
-const logger: Logger = {
-    debug: (msg, f) => console.log(JSON.stringify({ level: 'debug', msg, ...f })),
-    info: (msg, f) => console.log(JSON.stringify({ level: 'info', msg, ...f })),
-    warn: (msg, f) => console.warn(JSON.stringify({ level: 'warn', msg, ...f })),
-    error: (msg, f) => console.error(JSON.stringify({ level: 'error', msg, ...f })),
-};
+import { ConsoleJsonLogger } from './observability/logger';
+import { PrometheusMetrics } from './observability/metrics';
+import { startMetricsServer } from './observability/metrics-server';
 
 function main(): void {
     const config = loadConfig();
+    const logger = new ConsoleJsonLogger(config.LOG_LEVEL);
+    const metrics = new PrometheusMetrics();
 
     const client = new Redis(config.REDIS_URL, { maxRetriesPerRequest: 1 });
     client.on('error', (err: Error) => logger.error('redis client error', { error: err.message }));
 
     const store = new RedisRateLimitStore({ client, timeoutMs: config.REDIS_TIMEOUT_MS, logger });
-    const limiter = buildRateLimiter(config, client, logger);
+    const limiter = buildRateLimiter(config, client, logger, metrics);
 
     const app = express();
     // Respect X-Forwarded-For so req.ip is the real client behind a load balancer.
@@ -69,15 +66,18 @@ function main(): void {
         res.status(500).json({ error: { type: 'internal_error', message: 'Internal server error' } });
     });
 
-    const server = app.listen(config.API_PORT, () => {
+    const apiServer = app.listen(config.API_PORT, () => {
         logger.info('rate limiter listening', { port: config.API_PORT, mode: config.FAILURE_MODE });
     });
+    const metricsServer = startMetricsServer(config.METRICS_PORT, metrics, logger);
 
     const shutdown = (signal: string): void => {
         logger.info('shutting down', { signal });
-        server.close(() => {
-            void client.quit().finally(() => {
-                process.exitCode = 0;
+        apiServer.close(() => {
+            metricsServer.close(() => {
+                void client.quit().finally(() => {
+                    process.exitCode = 0;
+                });
             });
         });
     };
