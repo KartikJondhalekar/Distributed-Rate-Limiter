@@ -19,7 +19,10 @@
     "verify:limiter": "tsx src/verify-limiter.ts",
     "load:single": "k6 run benchmarks/single-instance.js",
     "load:multi": "k6 run benchmarks/multi-instance.js",
-    "load:burst": "k6 run benchmarks/burst.js"
+    "load:burst": "k6 run benchmarks/burst.js",
+    "docker:build": "docker build -t distributed-rate-limiter .",
+    "docker:up": "docker compose --profile full up --build -d",
+    "docker:down": "docker compose --profile full down"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
